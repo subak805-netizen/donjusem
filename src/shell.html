@@ -1,0 +1,48 @@
+<div class="wrap">
+  <header class="top">
+    <div class="hello"><span class="avatar">돈</span><div><span class="sub">우리집 가계부</span><span class="brand">돈주셈</span></div></div>
+    <nav class="pills" aria-label="메뉴">
+      <button data-tab="home" aria-current="page" title="단축키 1">이번 달</button>
+      <button data-tab="living" title="단축키 2">생활비</button>
+      <button data-tab="allow" title="단축키 3">용돈</button>
+      <button data-tab="pot" title="단축키 4">모은 돈</button>
+      <button data-tab="plan" title="단축키 5">월 계획</button>
+    </nav>
+    <div class="tright">
+      <div class="month"><button class="iconbtn" id="prevM" aria-label="지난달">‹</button><span class="mlabel" id="mlabel"></span><button class="iconbtn" id="nextM" aria-label="다음달">›</button></div>
+      <button class="btn top-add" data-open="spend" title="단축키 N"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>지출 적기</button>
+    </div>
+  </header>
+  <h1 class="ptitle" id="ptitle" hidden></h1>
+  <main id="view"></main>
+</div>
+
+<nav class="dock" aria-label="메뉴">
+  <div class="dock-in">
+    <button class="fab" data-open="spend"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>지출 적기</button>
+    <div class="tabs">
+      <button data-tab="home" aria-current="page">이번 달</button>
+      <button data-tab="living">생활비</button>
+      <button data-tab="allow">용돈</button>
+      <button data-tab="pot">모은 돈</button>
+      <button data-tab="plan">월 계획</button>
+    </div>
+  </div>
+</nav>
+
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" hidden aria-modal="true" role="dialog" aria-labelledby="sheetTitle">
+  <div class="sheet-in">
+    <div class="row-h" style="align-items:center"><h3 id="sheetTitle">지출 적기</h3><button class="x" id="sheetClose">닫기</button></div>
+    <div class="sub" id="amtLbl" hidden></div>
+    <div class="amt"><input id="amtIn" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="금액"><span>원</span></div>
+    <div id="extra" hidden style="display:flex;flex-direction:column;gap:12px"></div>
+    <div class="field" id="chipField" style="gap:8px"><label>어디서 나간 돈이에요?</label><div class="chips" id="chips"></div></div>
+    <div class="field" id="memoField"><label for="memoIn">메모 (선택)</label><input id="memoIn" placeholder="예) 이마트 장보기" autocomplete="off"></div>
+    <div class="sub" id="allowNote" hidden>용돈은 어디에 썼는지 안 적어요. 금액만 적으면 남은 용돈이 줄어요.</div>
+    <div class="field" id="dateField"><label for="dateIn">날짜</label><input id="dateIn" type="date"></div>
+    <div class="sheet-btns"><button class="btn danger" id="delBtn" hidden>지우기</button><button class="btn" id="saveBtn">적기</button></div>
+  </div>
+</section>
+<div class="toast" id="toast" hidden></div>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
