@@ -8,7 +8,8 @@ html=f'''<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="color-scheme" content="light dark">
 <title>돈주셈</title>
 <meta name="description" content="부부가 돈을 합쳐 관리하고 각자 용돈을 쓰는 가계부">
 <meta name="theme-color" content="#ECECEA" media="(prefers-color-scheme: light)">

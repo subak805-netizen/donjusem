@@ -268,7 +268,7 @@ button{cursor:pointer}
 /* 바텀시트 (컴퓨터에선 가운데 창) */
 .scrim{position:fixed;inset:0;background:var(--scrim);z-index:9}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none}
-.sheet-in{pointer-events:auto;max-width:460px;margin:0 auto;background:var(--surface);border-radius:28px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;max-height:calc(100dvh - 40px);overflow:auto;box-shadow:0 -4px 30px rgba(0,0,0,.18)}
+.sheet-in{overscroll-behavior:contain;pointer-events:auto;max-width:460px;margin:0 auto;background:var(--surface);border-radius:28px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;max-height:calc(100dvh - 40px);overflow:auto;box-shadow:0 -4px 30px rgba(0,0,0,.18)}
 .sheet h3{margin:0;font-size:19px;font-weight:500}
 .x{height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:500;padding:0 14px}
 .amt{display:flex;align-items:baseline;gap:6px;border-bottom:2px solid var(--lime);padding-bottom:6px}

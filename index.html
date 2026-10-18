@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="color-scheme" content="light dark">
 <title>돈주셈</title>
 <meta name="description" content="부부가 돈을 합쳐 관리하고 각자 용돈을 쓰는 가계부">
 <meta name="theme-color" content="#ECECEA" media="(prefers-color-scheme: light)">
@@ -287,7 +288,7 @@ button{cursor:pointer}
 /* 바텀시트 (컴퓨터에선 가운데 창) */
 .scrim{position:fixed;inset:0;background:var(--scrim);z-index:9}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none}
-.sheet-in{pointer-events:auto;max-width:460px;margin:0 auto;background:var(--surface);border-radius:28px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;max-height:calc(100dvh - 40px);overflow:auto;box-shadow:0 -4px 30px rgba(0,0,0,.18)}
+.sheet-in{overscroll-behavior:contain;pointer-events:auto;max-width:460px;margin:0 auto;background:var(--surface);border-radius:28px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;max-height:calc(100dvh - 40px);overflow:auto;box-shadow:0 -4px 30px rgba(0,0,0,.18)}
 .sheet h3{margin:0;font-size:19px;font-weight:500}
 .x{height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:500;padding:0 14px}
 .amt{display:flex;align-items:baseline;gap:6px;border-bottom:2px solid var(--lime);padding-bottom:6px}
@@ -399,10 +400,10 @@ button.lrow:hover{background:var(--surface-2);border-radius:12px}
   </div>
 </section>
 <div class="toast" id="toast" hidden></div>
-<input type="file" id="importFile" accept="application/json,.json" hidden>
+<input type="file" id="importFile" hidden>
 
 <script>
-const APP_VER='1.0.0 (10-17)';
+const APP_VER='1.1.0 (10-18)';
 
 /* ── 저장: 이 앱 전용 IndexedDB (github.io 다른 앱과 localStorage 용량을 나눠 쓰지 않게) ── */
 const DB_NAME='donjusemDB', STORE='kv';
@@ -470,7 +471,7 @@ function persist(){clearTimeout(saveTimer);saveTimer=setTimeout(flush,250)}
 async function flush(){
   clearTimeout(saveTimer);
   try{await idbSet('state',S);if(!saveOk){saveOk=true;toast('다시 저장되고 있어요')}}
-  catch(e){if(saveOk)toast('저장이 안 됐어요. 사파리 개인정보 보호 모드인지 확인해 주세요');saveOk=false}
+  catch(e){if(saveOk)toast('저장이 안 됐어요. 비공개(시크릿) 창이 아닌지 확인해 주세요');saveOk=false}
 }
 
 /* ── 상태 ── */
@@ -624,15 +625,38 @@ function chart(months){
 }
 
 /* ── 안내 카드 ── */
-const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const UA=navigator.userAgent;
+const isAndroid=/Android/i.test(UA);
+const isIOS=!isAndroid&&(/iP(hone|ad|od)/.test(UA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1));
+const isSamsung=/SamsungBrowser/i.test(UA);
+const PHONE_FILES=isIOS?'「파일」 앱':isAndroid?'「내 파일」의 다운로드 폴더':'컴퓨터';
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(tab==='home'&&S.months[vm])render()});
+window.addEventListener('appinstalled',()=>{installEvt=null;installClosed=true;render();toast('홈 화면에 설치했어요. 이제 아이콘으로 열어 주세요')});
+async function doInstall(){
+  if(!installEvt)return;
+  installEvt.prompt();
+  try{const r=await installEvt.userChoice;if(r&&r.outcome==='accepted')installClosed=true}catch(e){}
+  installEvt=null;render();
+}
 const isStandalone=()=>navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
 function topCards(){
   let h='';
-  if(isIOS&&!isStandalone()&&!installClosed)h+=`<section class="card install">
-    <div class="ch"><span class="icircle">${ico('share')}</span><h2>홈 화면에 추가해 주세요</h2><button class="x" data-closeinstall>닫기</button></div>
-    <div>사파리 아래쪽 <b>공유 버튼</b>을 누르고 <b>「홈 화면에 추가」</b>를 누르면 앱처럼 쓸 수 있어요.</div>
-    <div class="sub">추가하지 않고 사파리로만 쓰면, 7일 동안 안 열었을 때 기록이 지워질 수 있어요.</div>
+  if((isIOS||isAndroid)&&!isStandalone()&&!installClosed){
+    const how=isIOS?`<div>사파리 아래쪽 <b>공유 버튼</b>을 누르고 <b>「홈 화면에 추가」</b>를 누르면 앱처럼 쓸 수 있어요.</div>
+      <div class="sub">추가하지 않고 사파리로만 쓰면, 7일 동안 안 열었을 때 기록이 지워질 수 있어요.</div>`
+      :installEvt?`<div>아래 버튼을 누르면 홈 화면에 돈주셈 아이콘이 생겨서 앱처럼 쓸 수 있어요.</div>
+      <button class="btn" data-install>${ico('download')}홈 화면에 설치</button>
+      <div class="sub">설치해 두면 폰 저장공간이 부족할 때도 기록이 지워지지 않게 지켜져요.</div>`
+      :isSamsung?`<div>아래쪽 <b>메뉴(≡)</b>를 누르고 <b>「현재 페이지 추가」 → 「홈 화면」</b>을 누르면 앱처럼 쓸 수 있어요.</div>
+      <div class="sub">설치해 두면 폰 저장공간이 부족할 때도 기록이 지워지지 않게 지켜져요.</div>`
+      :`<div>오른쪽 위 <b>메뉴(⋮)</b>를 누르고 <b>「홈 화면에 추가」</b>(또는 「앱 설치」)를 누르면 앱처럼 쓸 수 있어요.</div>
+      <div class="sub">설치해 두면 폰 저장공간이 부족할 때도 기록이 지워지지 않게 지켜져요.</div>`;
+    h+=`<section class="card install">
+    <div class="ch"><span class="icircle">${ico(isIOS?'share':'download')}</span><h2>홈 화면에 추가해 주세요</h2><button class="x" data-closeinstall>닫기</button></div>
+    ${how}
   </section>`;
+  }
   if(!S.setupDone)h+=`<section class="card welcome">
     <h2>돈주셈을 시작해요</h2>
     <div>먼저 <b>월 계획</b>에 월급, 고정지출, 용돈, 생활비 예산을 적어 주세요. 한 번만 적으면 매달 그대로 들어가요.</div>
@@ -646,7 +670,7 @@ function backupCard(){
   if(d!==null&&d<30)return '';
   return `<section class="card backupnag">
     <div class="ch"><span class="icircle">${ico('download')}</span><h2>${d===null?'아직 백업을 안 했어요':`백업한 지 ${d}일 지났어요`}</h2></div>
-    <div class="sub">기록은 이 아이폰에만 있어요. 백업 파일을 「파일」 앱에 저장해 두면 폰을 바꿔도 되살릴 수 있어요.</div>
+    <div class="sub">기록은 이 폰에만 있어요. 백업 파일을 ${PHONE_FILES}에 저장해 두면 폰을 바꿔도 되살릴 수 있어요.</div>
     <button class="btn" data-backup>${ico('download')}백업 파일 저장</button>
   </section>`;
 }
@@ -919,7 +943,7 @@ function plan(){
   </section>
   <section class="card">
     <h2>백업</h2>
-    <div class="sub">기록은 이 아이폰에만 저장돼요. 한 달에 한 번 백업 파일을 「파일」 앱에 저장해 두면 폰을 바꿔도 되살릴 수 있어요.${S.lastBackup?` 마지막 백업: ${new Date(S.lastBackup).toLocaleDateString('ko-KR')}`:''}</div>
+    <div class="sub">기록은 이 폰에만 저장돼요. 한 달에 한 번 백업 파일을 ${PHONE_FILES}에 저장해 두면 폰을 바꿔도 되살릴 수 있어요.${S.lastBackup?` 마지막 백업: ${new Date(S.lastBackup).toLocaleDateString('ko-KR')}`:''}</div>
     <div class="pair"><button class="btn ghost" data-backup>${ico('download')}백업 파일 저장</button><button class="btn ghost" data-import>백업 불러오기</button></div>
     ${imp}
     <div class="sub">돈주셈 ${APP_VER}</div>
@@ -945,7 +969,7 @@ function render(){
   if(tab==='plan')updateSums();
   persist();
 }
-function go(t){tab=t;pendingDel=null;render();window.scrollTo(0,0)}
+function go(t,fromHistory){if(t!==tab&&!fromHistory)history.pushState({tab:t},'');tab=t;pendingDel=null;render();window.scrollTo(0,0)}
 function toast(msg){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2200)}
 function moveMonth(dir){
   const keys=Object.keys(S.months).sort(), i=keys.indexOf(vm), n=keys[i+dir];
@@ -974,7 +998,7 @@ function extraStock(st){
   return `<div class="sub num">${won(q)}주 가지고 있어요 · 평균 산 가격 ${won(q?cost/q:0)} · 산 돈 ${won(cost)}</div>
     <div class="field"><label>산 기록</label><div>${st.buys.map((b,j)=>`<div class="brow num"><span>${ddot(b.d)}</span><span>${won(b.q)}주 × ${won(b.u)}</span><b>${won(b.q*b.u)}</b><button data-delbuy="${j}">지우기</button></div>`).join('')}</div></div>`;
 }
-function showSheet(focusEl){$('#scrim').hidden=false;$('#sheet').hidden=false;setTimeout(()=>{focusEl.focus();if(focusEl.select)focusEl.select()},60)}
+function showSheet(focusEl){if($('#sheet').hidden)history.pushState({sheet:1,tab},'');$('#scrim').hidden=false;$('#sheet').hidden=false;setTimeout(()=>{focusEl.focus();if(focusEl.select)focusEl.select()},60)}
 function openSheet(m,ref){
   mode=m; editRef=ref||null;
   ['#extra','#amtLbl','#chipField','#memoField','#dateField','#allowNote','#delBtn'].forEach(q=>$(q).hidden=true);
@@ -1010,7 +1034,8 @@ function openSheet(m,ref){
   $('#delBtn').hidden=!ref; $('#chipField').hidden=false; $('#dateField').hidden=false;
   chips(); showSheet($('#amtIn'));
 }
-function closeSheet(){$('#scrim').hidden=true;$('#sheet').hidden=true}
+function hideSheet(){$('#scrim').hidden=true;$('#sheet').hidden=true}
+function closeSheet(){if($('#sheet').hidden)return;hideSheet();if(history.state&&history.state.sheet)history.back()}
 function removeRef(r){const arr=r.kind==='me'?M().me:M().exp;const i=arr.indexOf(r.obj);if(i>=0)arr.splice(i,1)}
 function addEntry(cat,d,a,m){if(cat==='me')M().me.push({d,a});else M().exp.push({d,c:cat,a,m})}
 function saveSheet(){
@@ -1083,11 +1108,14 @@ async function exportBackup(){
   const data=JSON.stringify({app:'donjusem',v:1,savedAt:new Date().toISOString(),state:S});
   const name=`donjusem-backup-${todayISO()}.json`;
   const file=new File([data],name,{type:'application/json'});
-  const done=()=>{S.lastBackup=Date.now();render();toast('백업 파일을 만들었어요. 「파일에 저장」으로 보관해 주세요')};
-  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'돈주셈 백업'});return done()}}
-  catch(e){if(e&&e.name==='AbortError')return}
+  const done=msg=>{S.lastBackup=Date.now();render();toast(msg)};
+  if(isIOS){
+    try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'돈주셈 백업'});return done('백업 파일을 만들었어요. 「파일에 저장」으로 보관해 주세요')}}
+    catch(e){if(e&&e.name==='AbortError')return}
+  }
   const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();
-  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);done();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
+  done(isAndroid?'다운로드 폴더에 백업 파일을 저장했어요 (「내 파일」 앱에서 볼 수 있어요)':'백업 파일을 저장했어요');
 }
 function readImport(file){
   const r=new FileReader();
@@ -1133,6 +1161,7 @@ document.addEventListener('click',e=>{
     $('#extra').innerHTML=extraStock(st);render();return toast('산 기록을 지웠어요');
   }
   if(d.closeinstall!=null){installClosed=true;return render()}
+  if(d.install!=null)return doInstall();
   if(d.setupdone!=null){S.setupDone=true;go('home');return toast('준비 끝! 이제 지출을 적어 보세요')}
   if(d.backup!=null)return exportBackup();
   if(d.import!=null)return $('#importFile').click();
@@ -1188,14 +1217,19 @@ document.addEventListener('keydown',e=>{
 });
 $('#scrim').addEventListener('click',closeSheet);
 $('#importFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)readImport(f)});
+window.addEventListener('popstate',e=>{
+  if(!$('#sheet').hidden){hideSheet();return}
+  const t=(e.state&&e.state.tab)||'home';
+  if(t!==tab)go(t,true);
+});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()});
 window.addEventListener('pagehide',flush);
 
 /* ── 시작 ── */
 (async function boot(){
   try{const saved=await idbGet('state');if(saved)S=fixState(saved)}
-  catch(e){saveOk=false;setTimeout(()=>toast('이 브라우저에선 저장이 안 돼요. 사파리로 열어 주세요'),300)}
-  ensureMonths();vm=CUR;render();
+  catch(e){saveOk=false;setTimeout(()=>toast(isIOS?'이 브라우저에선 저장이 안 돼요. 사파리로 열어 주세요':'이 브라우저에선 저장이 안 돼요. 크롬이나 삼성 인터넷으로 열어 주세요'),300)}
+  ensureMonths();vm=CUR;history.replaceState({tab:'home'},'');render();
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
 })();
